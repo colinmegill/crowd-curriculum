@@ -6,16 +6,9 @@ import * as H from './hello'
 
 const store = new H.HelloStore()
 
-request('https://api.graph.cool/simple/v1/movies', `{
-  Movie(title: "Inception") {
-    releaseDate
-    actors {
-      name
-    }
-  }
-}`).then(data => {
+request('http://localhost:4000', `{ name }`).then(data => {
   // console.log(data)
-  store.who = (data as any).Movie.actors[0].name
+  store.who = (data as any).name
 })
 
 ReactDOM.render(

@@ -2,12 +2,14 @@ const { GraphQLServer } = require('graphql-yoga')
 
 const typeDefs = `
 type Query {
+  name :String
   description: String
 }
 `
 
 const resolvers = {
   Query: {
+    name: () => `Mr GraphQL`,
     description: () => `This is a test of the Emergency GraphQL Broadcast System`
   }
 }
