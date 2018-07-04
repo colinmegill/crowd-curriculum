@@ -1,7 +1,3 @@
-var webpack = require('webpack');
-var WebpackDevServer = require('webpack-dev-server');
-var config = require('../webpack.config');
-
 const { GraphQLServer } = require('graphql-yoga')
 
 const typeDefs = `
@@ -21,16 +17,20 @@ const server = new GraphQLServer({
   resolvers
 })
 
-server.start(() => console.log(`The server is running on http://localhost:4000`))
+server.start(() => console.log(`GraphQL server running on http://localhost:4000`))
 
-// new WebpackDevServer(webpack(config), {
-//   publicPath: config.output.publicPath,
-//   hot: false,
-//   historyApiFallback: true
-// }).listen(3000, 'localhost', function (err, result) {
-//   if (err) {
-//     console.log(err);
-//   }
+var webpack = require('webpack');
+var WebpackDevServer = require('webpack-dev-server');
+var config = require('../webpack.config');
 
-//   console.log('Listening at localhost:3000');
-// });
+new WebpackDevServer(webpack(config), {
+  publicPath: config.output.publicPath,
+  hot: false,
+  historyApiFallback: true
+}).listen(3000, 'localhost', function (err, result) {
+  if (err) {
+    console.log(err);
+  }
+
+  console.log('Webpack Dev server running on http://localhost:3000');
+});

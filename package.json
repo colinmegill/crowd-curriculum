@@ -30,6 +30,7 @@
     ]
   },
   "dependencies": {
+    "graphql-request": "^1.6.0",
     "graphql-yoga": "^1.14.10",
     "mobx": "^5.0.2",
     "mobx-react": "^5.2.3",
