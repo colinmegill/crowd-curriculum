@@ -1,5 +1,5 @@
-var path = require('path');
-var webpack = require('webpack');
+const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
   resolve: {
@@ -20,11 +20,11 @@ module.exports = {
 
   entry: [
     'webpack-dev-server/client?http://localhost:3000',
-    './src/index'
+    './src/client/index'
   ],
 
   output: {
-    path: path.join(__dirname, 'dist'),
+    path: path.join(__dirname, 'dist-client'),
     filename: 'bundle.js',
     publicPath: '/static/'
   },
