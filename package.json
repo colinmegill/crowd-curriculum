@@ -31,6 +31,7 @@
     ]
   },
   "dependencies": {
+    "@types/ws": "^5.1.2",
     "class-transformer": "^0.1.9",
     "graphql-request": "^1.6.0",
     "graphql-yoga": "^1.14.10",
