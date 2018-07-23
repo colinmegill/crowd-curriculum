@@ -67,20 +67,96 @@ const UnitFields = `{
   criteria ${CriterionFields}
 }`
 
+
+type Criterion = {
+  type :string
+  min? :number
+  max? :number
+  text? :string
+}
+
+type Resource = {
+  type :string
+  url? :string
+  previewUrl? :string
+  title? :string
+  description? :string
+}
+
+type Activity = {
+  id :string
+  type :string
+  title? :string
+  intro? :string
+  resources :Resource[]
+  location? :Location
+}
+
+type Unit = {
+  id :string
+  goal :string
+  benefits? :string
+  justification :string
+  criteria :Criterion[],
+  activities :Activity[]
+}
 export class UnitStore {
+  @observable unit :Unit
+
   constructor (readonly id :string) {
     request(GQLEndpoint, `{ unit(id: "${id}") ${UnitFields} }`).then((data :any) => {
       console.log(data)
+      this.unit = (data.unit as Unit)
     })
   }
   // TODO
 }
 
+const ACTIVITY_TITLES = {
+  WATCH: "Watch",
+  READ: "Read",
+  CONSIDER: "Consider",
+  DRAW: "Draw",
+  WRITE: "Write",
+  CUSTOM: "Custom"
+}
+
+
+function renderActivity (activity :Activity) {
+  return (
+    <div key={activity.id}>
+      <h2>{activity.title || ACTIVITY_TITLES[activity.type]}</h2>
+      <p>{activity.intro}</p>
+      <ul>{activity.resources.map(renderResource)}</ul>
+    </div>
+  )
+}
+
+function renderResource (resource :Resource, index :number) {
+  switch (resource.type) {
+  case 'BOOK':
+    // TODO: custom stuffs
+  case 'VIDEO':
+    // TODO: custom stuffs
+  default:
+    return <li key={index}><a href={resource.url}>{resource.url}</a></li>
+  }
+}
+
 @observer
-export class Unit extends React.Component<{store :UnitStore}> {
+export class UnitView extends React.Component<{store :UnitStore}> {
 
   render () {
-    const {id} = this.props.store
-    return (<div>TODO: {id}</div>)
+    const unit = this.props.store.unit
+    if (unit) return (
+      <div>
+      <h1>If you want to {unit.goal}</h1>
+      <p>{unit.benefits}</p>
+      // TODO: format criteria
+      <p>You should...</p>
+      {unit.activities.map(renderActivity)}
+      </div>
+    )
+    else return (<div>Loading...</div>)
   }
 }

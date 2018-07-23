@@ -22,7 +22,7 @@ class App extends React.Component<{store :AppStore}>  {
   render () {
     const {hash} = this.props.store
     if (hash.startsWith("#unit-")) {
-      return <U.Unit store={new U.UnitStore(hash.substring(6))} />
+      return <U.UnitView store={new U.UnitStore(hash.substring(6))} />
     } else {
       return <U.UnitList store={new U.UnitListStore()} />
     }
