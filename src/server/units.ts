@@ -175,30 +175,36 @@ export const units :Unit[] = [
         "the ocean)? Pay attention to details of the ship from photographs you can find " +
         "online - how many smokestacks does it have? Are there cables or wires? Is your drawing " +
         "of the outside or can you see the inside as well?",
+      resources: []
     }, {
       id: "5",
       type: ActivityType.WRITE,
       intro: "Describe why the people who built it though it couldn't sink. What engineering " +
         "features did it have that were meant to prevent this from happening? Why were they " +
-        "wrong? What decisions could you have made differently?"
+        "wrong? What decisions could you have made differently?",
+      resources: []
     }, {
       id: "6",
       type: ActivityType.WRITE,
       intro: "Describe the journey taken by Alvin. What can Alvin do? What features allow " +
-        "Alvin to do what it can do?"
+        "Alvin to do what it can do?",
+      resources: []
     }, {
       id: "7",
       type: ActivityType.CUSTOM,
       title: "Plot",
       intro: "41.726931° N and -49.948253° W\n\n" +
         "This is where the Titanic is. Plot this on a map. If you're unfamiliar with latitude & " +
-        "longitude [learn about that first](). Then plot origin & destination."
-      // TODO: resources that include a link to the world map on which they'll plot
+        "longitude [learn about that first](). Then plot origin & destination.",
+      resources: [
+        // TODO: resources that include a link to the world map on which they'll plot
+      ]
     }, {
       id: "8",
       type: ActivityType.CUSTOM,
       title: "Go find out",
-      intro: "How did the Titanic communicate with other ships?"
+      intro: "How did the Titanic communicate with other ships?",
+      resources: []
     }]
   })
 ]
