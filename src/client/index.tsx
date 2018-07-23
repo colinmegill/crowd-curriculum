@@ -1,34 +1,35 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { request } from 'graphql-request'
+import { action, observable } from 'mobx'
+import { observer } from 'mobx-react'
+import * as U from './unit'
 
-import * as H from './hello'
+class AppStore {
+  @observable hash :string = window.location.hash
+}
 
-const store = new H.HelloStore()
+const appStore = new AppStore()
 
-// request('http://localhost:4000', `{ name }`).then(data => {
-//   // console.log(data)
-//   store.who = (data as any).name
-// })
+window.addEventListener(
+  'hashchange',
+  action('hashchangeHandler', ev => {
+    appStore.hash = window.location.hash
+  })
+)
 
-const ResourceFields = `{type, url, previewUrl, title, description}`
-const LocationFields = `{name, lat, lon}`
-const ActivityFields = `{id, type, resources ${ResourceFields}, intro, location ${LocationFields}}`
-const CriterionFields = `{type, min, max, text}`
-const UnitFields = `{
-  id,
-  goal,
-  benefits,
-  justification,
-  activities ${ActivityFields},
-  criteria ${CriterionFields}
-}`
-
-request('http://localhost:4000', `{ units ${UnitFields} }`).then(units => {
-  console.log(units)
-})
+@observer
+class App extends React.Component<{store :AppStore}>  {
+  render () {
+    const {hash} = this.props.store
+    if (hash.startsWith("#unit-")) {
+      return <U.Unit store={new U.UnitStore(hash.substring(6))} />
+    } else {
+      return <U.UnitList store={new U.UnitListStore()} />
+    }
+  }
+}
 
 ReactDOM.render(
-  <H.Hello store={store} />,
+  <App store={appStore} />,
   document.getElementById('root')
 )

@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, Int, Resolver, Query, registerEnumType } from 'type-graphql'
+import { ObjectType, Field, ID, Int, Resolver, Query, Arg, registerEnumType } from 'type-graphql'
 import { plainToClass } from "class-transformer"
 
 export enum CriterionType {
@@ -213,7 +213,12 @@ export const units :Unit[] = [
 export class UnitResolver {
 
   @Query(returns => [Unit])
-  units() :Unit[] {
+  units () :Unit[] {
     return units
+  }
+
+  @Query(returns => Unit, {nullable: true})
+  async unit (@Arg("id") id :string) :Promise<Unit|void> {
+    return await units.find(unit => unit.id === id)
   }
 }

@@ -41,7 +41,7 @@
     "react": "^16.4.1",
     "react-dom": "^16.4.1",
     "reflect-metadata": "^0.1.12",
-    "type-graphql": "^0.12.2"
+    "type-graphql": "^0.12.3"
   },
   "devDependencies": {
     "@types/jest": "^23.1.0",
