@@ -1,4 +1,6 @@
-import { ObjectType, Field, ID, Int, Resolver, Query, Arg, registerEnumType } from 'type-graphql'
+import {
+  Mutation, InputType, ObjectType, Field, ID, Int, Resolver, Query, Arg, registerEnumType
+} from 'type-graphql'
 import { plainToClass } from "class-transformer"
 
 export enum CriterionType {
@@ -15,6 +17,18 @@ registerEnumType(CriterionType, {
 
 @ObjectType()
 export class Criterion {
+  @Field(type => CriterionType)
+  type :CriterionType
+  @Field(type => Int, {nullable: true})
+  min? :number
+  @Field(type => Int, {nullable: true})
+  max? :number
+  @Field(type => String, {nullable: true})
+  text? :string
+}
+
+@InputType()
+export class CriterionInput implements Partial<Criterion> {
   @Field(type => CriterionType)
   type :CriterionType
   @Field(type => Int, {nullable: true})
@@ -54,8 +68,34 @@ export class Resource {
   description? :string
 }
 
+@InputType()
+export class ResourceInput implements Partial<Resource> {
+  @Field(type => ResourceType)
+  type :ResourceType
+  // pretty much everything here is optional as different resources will have some subset
+  // of these various attributes
+  @Field(type => String, {nullable: true})
+  url? :string
+  @Field(type => String, {nullable: true})
+  previewUrl? :string
+  @Field(type => String, {nullable: true})
+  title? :string
+  @Field(type => String, {nullable: true})
+  description? :string
+}
+
 @ObjectType()
 export class Location {
+  @Field(type => String)
+  name :string
+  @Field(type => String, {nullable: true})
+  lat? :string
+  @Field(type => String, {nullable: true})
+  lon? :string
+}
+
+@InputType()
+export class LocationInput implements Partial<Location> {
   @Field(type => String)
   name :string
   @Field(type => String, {nullable: true})
@@ -79,10 +119,12 @@ registerEnumType(ActivityType, {
   description: "Enumerates types of activities",
 });
 
+type ActivityId = string
+
 @ObjectType()
 export class Activity {
   @Field(type => ID)
-  id :string
+  id :ActivityId
   @Field(type => ActivityType)
   type :ActivityType
   @Field(type => String, {nullable: true})
@@ -95,16 +137,50 @@ export class Activity {
   location? :Location
 }
 
+@InputType()
+export class ActivityInput implements Partial<Activity> {
+  @Field(type => ActivityType)
+  type :ActivityType
+  @Field(type => String, {nullable: true})
+  title? :string
+  @Field(type => String, {nullable: true})
+  intro? :string
+  @Field(type => [ResourceInput])
+  resources :ResourceInput[]
+  @Field(type => LocationInput, {nullable: true})
+  location? :LocationInput
+}
+
 @ObjectType()
-export class Unit {
-  @Field(type => ID)
-  id :string
+export class Details {
   @Field(type => String)
   goal :string
   @Field(type => String, {nullable: true})
   benefits? :string
   @Field(type => String, {nullable: true})
   justification? :string
+}
+
+@InputType()
+export class DetailsInput implements Partial<Details> {
+  @Field(type => String)
+  goal :string
+  @Field(type => String, {nullable: true})
+  benefits? :string
+  @Field(type => String, {nullable: true})
+  justification? :string
+}
+
+// I wish I could annotate this as having GraphQL type "ID"
+// and not have to repeat myself a dozen times below
+type UnitId = string
+
+@ObjectType()
+export class Unit {
+  @Field(type => ID)
+  id :UnitId
+  @Field(type => Details)
+  details :Details
   @Field(type => [Criterion])
   criteria :Criterion[]
   @Field(type => [Activity])
@@ -114,8 +190,10 @@ export class Unit {
 export const units :Unit[] = [
   plainToClass(Unit, {
     id: "1",
-    goal: "Learn about the Titanic",
-    benefits: "Which is great, because engineering failures teach us a lot about building things.",
+    details: {
+      goal: "Learn about the Titanic",
+      benefits: "Which is great, because engineering failures teach us a lot about building things.",
+    },
     criteria: [
       {type: CriterionType.AGE, min: 6, max: 12},
       {type: CriterionType.INTEREST, text: "engineering"},
@@ -212,13 +290,84 @@ export const units :Unit[] = [
 @Resolver(Unit)
 export class UnitResolver {
 
+  // NOTE: the resolver methods are all async because we will eventually be talking to a real
+  // database, which will require them to be async; presently they just manipulate temporary
+  // in-memory data structures and don't actually need to be async
+
   @Query(returns => [Unit])
-  units () :Unit[] {
+  async units () :Promise<Unit[]> {
     return units
   }
 
   @Query(returns => Unit, {nullable: true})
-  async unit (@Arg("id") id :string) :Promise<Unit|void> {
+  async unit (
+    @Arg("id") id :string
+  ) :Promise<Unit|void> {
     return await units.find(unit => unit.id === id)
+  }
+
+  @Mutation(returns => Unit)
+  async createUnit (
+    @Arg("goal") goal :string
+  ) :Promise<Unit> {
+    // NOTE: for now just use numeric ids; when we have a real database, it will assign ids
+    const maxId = units.map(u => parseInt(u.id)).reduce((i1, i2) => Math.max(i1, i2))
+    const unit = new Unit()
+    unit.id = `${maxId+1}`
+    unit.details = {goal}
+    units.push(unit)
+    return unit
+  }
+
+  // these update methods return undefined/null on success or a string describing the failure in the
+  // event of an error; TODO: is this a sensible way to communicate errors from server to client or
+  // does GraphQL provide a better mechanism?
+
+  @Mutation(returns => String, {nullable: true})
+  async updateDetails (
+    @Arg("unitId", type => ID) unitId :UnitId,
+    @Arg("details") details :DetailsInput
+  ) :Promise<string|void> {
+    return this.updateUnit(unitId, unit => { unit.details = details })
+  }
+
+  @Mutation(returns => String, {nullable: true})
+  async updateCriteria (
+    @Arg("unitId", type => ID) unitId :UnitId,
+    @Arg("criteria", type => [CriterionInput]) criteria :CriterionInput[]
+  ) :Promise<string|void> {
+    return this.updateUnit(unitId, unit => { unit.criteria = criteria })
+  }
+
+  @Mutation(returns => String, {nullable: true})
+  async addActivity (
+    @Arg("goal", type => ID) unitId :UnitId,
+    @Arg("activity") activity :ActivityInput
+  ) :Promise<string|void> {
+    return this.updateUnit(unitId, unit => {
+      // NOTE: for now just use numeric ids; when we have a real database, it will assign ids
+      const maxId = unit.activities.map(a => parseInt(a.id)).reduce((i1, i2) => Math.max(i1, i2))
+      unit.activities.push({id: `${maxId+1}`, ...activity})
+    })
+  }
+
+  @Mutation(returns => String, {nullable: true})
+  async updateActivity (
+    @Arg("unitId", type => ID) unitId :UnitId,
+    @Arg("activityId", type => ID) activityId :ActivityId,
+    @Arg("activity") activity :ActivityInput
+  ) :Promise<string|void> {
+    return this.updateUnit(unitId, unit => {
+      const activityIdx = unit.activities.findIndex(a => a.id === activityId)
+      if (activityIdx < 0) return `No activity with id '${activityId}'`
+      unit.activities[activityIdx] = {id: activityId, ...activity}
+      return undefined
+    })
+  }
+
+  private updateUnit (unitId :UnitId, op :(unit :Unit) => string|void) {
+    const unit = units.find(unit => unit.id === unitId)
+    if (unit) return op(unit)
+    return `No unit with id '${unitId}'`
   }
 }

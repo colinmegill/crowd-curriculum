@@ -19,11 +19,11 @@ export class UnitListStore {
   constructor () {
     // TODO: I don't love that the constructor is making a GraphQL call; need to think about when
     // network requests are initiated
-    request(GQLEndpoint, `{ units { id, goal } }`).then((data :any) => {
+    request(GQLEndpoint, `{units {id, details {goal}}}`).then((data :any) => {
       // TODO: I don't love that we just cast the results to the right type, but I'm not ready to
       // take on the pain of generating TypeScript stubs from GQL queries and all the build-system
       // bullshit that's going to entail
-      this.units = (data.units as UnitSummary[])
+      this.units = data.units.map((ud :any) => ({id: ud.id, goal: ud.details.goal}))
       this.loading = false
     })
     // TODO: what if the request fails? error handling, reporting
@@ -60,13 +60,10 @@ const ActivityFields = `{id, type, resources ${ResourceFields}, intro, location 
 const CriterionFields = `{type, min, max, text}`
 const UnitFields = `{
   id,
-  goal,
-  benefits,
-  justification,
+  details {goal, benefits, justification},
   activities ${ActivityFields},
   criteria ${CriterionFields}
 }`
-
 
 type Criterion = {
   type :string
@@ -92,24 +89,61 @@ type Activity = {
   location? :Location
 }
 
-type Unit = {
-  id :string
+type Details = {
   goal :string
   benefits? :string
-  justification :string
+  justification? :string
+}
+
+type Unit = {
+  id :string
+  details :Details,
   criteria :Criterion[],
   activities :Activity[]
 }
+
+enum Mode { VIEW, EDIT_DETAILS, EDIT_CRITERIA, EDIT_ACTIVITY, ADD_ACTIVITY }
+
 export class UnitStore {
   @observable unit :Unit
+  @observable mode :Mode = Mode.VIEW
+  @observable editedDetails :Details
 
   constructor (readonly id :string) {
     request(GQLEndpoint, `{ unit(id: "${id}") ${UnitFields} }`).then((data :any) => {
       console.log(data)
       this.unit = (data.unit as Unit)
+    }, error => {
+      console.warn(error) // TODO: error reporting
     })
   }
-  // TODO
+
+  setMode (mode :Mode) {
+    this.mode = mode
+  }
+
+  editDetails () {
+    this.editedDetails = JSON.parse(JSON.stringify(this.unit.details))
+    this.setMode(Mode.EDIT_DETAILS)
+  }
+
+  async saveDetails () {
+    this.unit.details = this.editedDetails
+    // TODO: "saving" state, disable save/cancel buttons based thereon, plumbing, plumbing...
+    const mutation = `mutation updateDetails ($unitId :ID!, $details :DetailsInput!) {
+      updateDetails(unitId: $unitId, details: $details)
+    }`
+    try {
+      const result = await request(GQLEndpoint, mutation, {
+        unitId: this.unit.id,
+        details: this.editedDetails
+      })
+      console.log(result)
+      this.setMode(Mode.VIEW)
+    } catch (error) {
+      console.warn(error) // TODO: error reporting
+    }
+  }
 }
 
 const ACTIVITY_TITLES = {
@@ -120,7 +154,6 @@ const ACTIVITY_TITLES = {
   WRITE: "Write",
   CUSTOM: "Custom"
 }
-
 
 function renderActivity (activity :Activity) {
   return (
@@ -143,20 +176,48 @@ function renderResource (resource :Resource, index :number) {
   }
 }
 
+function renderDetails (store :UnitStore) {
+  if (store.mode === Mode.EDIT_DETAILS) {
+    const details = store.editedDetails
+    return <div className="editMode">
+      <h1>If you want to:
+         <input id="goal" value={details.goal} placeholder="Learn about ..."
+                onChange={ev => store.editedDetails.goal = ev.currentTarget.value}/>
+      </h1>
+      <div>
+        <input id="benefits" value={details.benefits} placeholder="Which is great, because..."
+               onChange={ev => store.editedDetails.benefits = ev.currentTarget.value}/>
+      </div>
+      <p>
+        <button onClick={() => store.saveDetails()}>Save</button>
+        <button onClick={() => store.setMode(Mode.VIEW)}>Cancel</button>
+      </p>
+    </div>
+  } else {
+    const {goal, benefits} = store.unit.details
+    return <div>
+      <h1>If you want to {goal}</h1>
+      <button className="editBtn" onClick={() => store.editDetails()}>Edit</button>
+      <p>{benefits}</p>
+      {store.mode === Mode.EDIT_CRITERIA ?
+       <div>TODO: edit criteria</div> :
+       <div>TODO: format criteria</div>}
+    </div>
+  }
+}
+
 @observer
 export class UnitView extends React.Component<{store :UnitStore}> {
 
   render () {
-    const unit = this.props.store.unit
-    if (unit) return (
+    const store = this.props.store
+    if (store.unit) return (
       <div>
-      <h1>If you want to {unit.goal}</h1>
-      <p>{unit.benefits}</p>
-      // TODO: format criteria
-      <p>You should...</p>
-      {unit.activities.map(renderActivity)}
+        {renderDetails(store)}
+        <p>You should...</p>
+        {store.unit.activities.map(renderActivity)}
       </div>
     )
-    else return (<div>Loading...</div>)
+    else return <div>Loading...</div>
   }
 }
