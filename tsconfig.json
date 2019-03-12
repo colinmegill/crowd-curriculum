@@ -10,6 +10,7 @@
     "removeComments": true,
     "sourceMap": true,
 
+    "downlevelIteration": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
@@ -17,6 +18,7 @@
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "noUnusedLocals": true,
+    "strict": true,
     "strictNullChecks": true,
     "suppressImplicitAnyIndexErrors": true
   },
