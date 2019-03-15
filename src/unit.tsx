@@ -15,12 +15,21 @@ export class UnitListStore {
   @observable loading = true
   @observable units :UnitSummary[] = []
 
-  constructor (db :DB) {
+  constructor (readonly db :DB) {
     console.log(`Fetching units...`)
     db.units().then(units => {
       this.units = units
       this.loading = false
     }, error => console.warn(error)) // TODO: error handling
+  }
+
+  @observable goal :string = ""
+
+  createUnit () {
+    this.db.createUnit(this.goal).then(
+      unit => window.location.hash = `#unit-${unit.id}`,
+      err => console.warn(err)
+    )
   }
 }
 
@@ -28,15 +37,22 @@ export class UnitListStore {
 export class UnitList extends React.Component<{store :UnitListStore}> {
 
   render () {
-    const {loading, units} = this.props.store
-    if (loading) return (<div>Loading...</div>)
+    const store = this.props.store
+    if (store.loading) return (<div>Loading...</div>)
     else return (
       <div>
         <h3>Units</h3>
-        {(units.length > 0) ?
-        <ul>{units.map(this.renderUnit)}</ul> :
+        {(store.units.length > 0) ?
+        <ul>{store.units.map(this.renderUnit)}</ul> :
         <p>No units.</p>}
-        <button>Create Unit</button>
+
+        <h3>Create Unit</h3>
+        <div>
+          So you want to:
+          <input placeholder="goal..." value={store.goal}
+                 onChange={ev => store.goal = ev.target.value} />
+          <button onClick={_ => store.createUnit()}>Create</button>
+        </div>
       </div>
     )
   }

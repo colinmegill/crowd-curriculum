@@ -18,6 +18,7 @@ const appStore = new S.AppStore()
 class App extends React.Component<{store :S.AppStore}>  {
   render () {
     const {hash, db} = this.props.store
+    // TODO: format & parse #unit hash in util code
     if (hash.startsWith("#unit-")) {
       return <U.UnitView store={new U.UnitStore(db, hash.substring(6))} />
     } else {

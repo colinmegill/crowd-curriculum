@@ -32,10 +32,11 @@ export class DB {
     return units.docs.map(doc => ({id: doc.ref.id, goal: doc.data().goal}))
   }
 
-  async createUnit () :Promise<M.Unit> {
+  async createUnit (goal :string) :Promise<M.Unit> {
     let ref = this.db.collection("units").doc()
-    let data = {}
     // TODO: set creation timestamp & creator id
+    let data = {goal}
+    await ref.set(data)
     console.log(`Created unit ${ref.path}...`)
     return new M.Unit(ref, data)
   }

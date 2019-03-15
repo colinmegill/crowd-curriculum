@@ -192,7 +192,7 @@ function makeList<O, T extends ListElem> (
   data :Data, elemsKey :string, orderKey :string, elems :Map<string, T>,
   owner :O, mkElem :(owner :O, key :string, data :Data) => T
 ) :string[] {
-  const elemsData = data[elemsKey]
+  const elemsData = data[elemsKey] || {}
   const elemKeys = new Set(Object.keys(elemsData))
   for (let key of elemKeys) {
     let edata = elemsData[key]
